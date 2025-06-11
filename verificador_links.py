@@ -25,7 +25,7 @@ def verificar_seguranca_url_safebrowsing(url, api_key):
 
     if "matches" in data:
         return "❌ CUIDADO! Esta URL foi sinalizada como perigosa pelo Google Safe Browsing."
-    return "✅ URL limpa segundo o Google Safe Browsing."
+    return "✅ Nenhuma ameaça detectada pelo Google Safe Browsing no momento.\n⚠️ Atenção: sites novos ou pouco conhecidos ainda podem representar riscos não identificados."
 
 def verificar_link(url):
     try:
@@ -36,14 +36,12 @@ def verificar_link(url):
         reputacao = "Domínio criado em: " + str(info.creation_date)
         alerta = "⚠️ Conteúdo pode conter termos sensacionalistas." if suspeito else "✅ Nenhum termo suspeito encontrado."
 
-        # Simulação de comparação com outras fontes confiáveis
         sugestoes = [
             "https://www.snopes.com/fact-check/fake-news-alert/",
             "https://aosfatos.org/noticias/boato-sobre-tema-semelhante/"
         ]
         links_similares = "\n".join(f"• {s}" for s in sugestoes)
 
-        # Verificação real de segurança
         alerta_segurança = verificar_seguranca_url_safebrowsing(url, SAFE_BROWSING_API_KEY)
 
         return f"🔗 Link analisado: {url}\n\n{reputacao}\n{alerta}\n\n🔗 Notícias similares confiáveis:\n{links_similares}\n\n🛡️ Segurança do site:\n{alerta_segurança}"
