@@ -3,6 +3,30 @@ import requests
 from urllib.parse import urlparse
 import whois
 
+SAFE_BROWSING_API_KEY = "AIzaSyATSZEXWFZcXoBEuFKMwBOuZambpWFf4kk"
+
+def verificar_seguranca_url_safebrowsing(url, api_key):
+    endpoint = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
+    payload = {
+        "client": {
+            "clientId": "verificador-links",
+            "clientVersion": "1.0"
+        },
+        "threatInfo": {
+            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "POTENTIALLY_HARMFUL_APPLICATION"],
+            "platformTypes": ["ANY_PLATFORM"],
+            "threatEntryTypes": ["URL"],
+            "threatEntries": [{"url": url}]
+        }
+    }
+
+    response = requests.post(f"{endpoint}?key={api_key}", json=payload)
+    data = response.json()
+
+    if "matches" in data:
+        return "❌ CUIDADO! Esta URL foi sinalizada como perigosa pelo Google Safe Browsing."
+    return "✅ URL limpa segundo o Google Safe Browsing."
+
 def verificar_link(url):
     try:
         dominio = urlparse(url).netloc
@@ -12,15 +36,15 @@ def verificar_link(url):
         reputacao = "Domínio criado em: " + str(info.creation_date)
         alerta = "⚠️ Conteúdo pode conter termos sensacionalistas." if suspeito else "✅ Nenhum termo suspeito encontrado."
 
-        # Simulação de análise de conteúdo (futuro: comparação real com fact-checkers)
+        # Simulação de comparação com outras fontes confiáveis
         sugestoes = [
             "https://www.snopes.com/fact-check/fake-news-alert/",
             "https://aosfatos.org/noticias/boato-sobre-tema-semelhante/"
         ]
         links_similares = "\n".join(f"• {s}" for s in sugestoes)
 
-        # Simulação de verificação de segurança (futuro: integração com VirusTotal / SafeBrowsing)
-        alerta_segurança = "✅ Nenhum comportamento malicioso identificado no código-fonte."
+        # Verificação real de segurança
+        alerta_segurança = verificar_seguranca_url_safebrowsing(url, SAFE_BROWSING_API_KEY)
 
         return f"🔗 Link analisado: {url}\n\n{reputacao}\n{alerta}\n\n🔗 Notícias similares confiáveis:\n{links_similares}\n\n🛡️ Segurança do site:\n{alerta_segurança}"
 
