@@ -1,32 +1,31 @@
 import requests
 from bs4 import BeautifulSoup
-from fuzzywuzzy import fuzz
+import difflib
+import json
 
 def verificar_perfil_completo(username):
     resultados = []
-
-    # ScraperAPI
     try:
-        r = requests.get(f"https://instagram.com/{username}", timeout=10)
-        if r.status_code == 200 and username.lower() in r.text.lower():
-            resultados.append("✔️ Página do Instagram acessível.")
+        url = f"https://www.instagram.com/{username}/"
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+        }
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            scripts = soup.find_all("script", type="application/ld+json")
+            if scripts:
+                dados_json = json.loads(scripts[0].string.strip())
+                nome = dados_json.get("name", "")
+                descricao = dados_json.get("description", "")
+                resultados.append(f"✅ Perfil encontrado: **{nome}**\n")
+                resultados.append(f"📄 Bio: _{descricao}_\n")
+            else:
+                resultados.append("⚠️ Perfil encontrado, mas sem metadados detectáveis.")
+        elif response.status_code == 404:
+            resultados.append("❌ Perfil não encontrado.")
         else:
-            resultados.append("❌ Página do Instagram inacessível.")
+            resultados.append(f"⚠️ Erro ao acessar perfil (status {response.status_code})")
     except Exception as e:
-        resultados.append(f"❌ Erro no acesso ao perfil: {e}")
-
-    # Fuzzy Matching (exemplo)
-    similares = []
-    for nome in ["caio.godoy", "caiogodoy_", "godoycaio123"]:
-        score = fuzz.ratio(username.lower(), nome.lower())
-        if score > 70:
-            similares.append((nome, score))
-
-    if similares:
-        resultados.append("🔍 Perfis semelhantes encontrados:")
-        for s in similares:
-            resultados.append(f"- @{s[0]} (semelhança: {s[1]}%)")
-    else:
-        resultados.append("✅ Nenhum perfil semelhante encontrado.")
-
+        resultados.append(f"Erro: {str(e)}")
     return "\n".join(resultados)

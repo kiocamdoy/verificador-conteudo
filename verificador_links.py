@@ -1,60 +1,26 @@
-
 import requests
-from urllib.parse import urlparse
-import whois
+from bs4 import BeautifulSoup
+import difflib
 
-SAFE_BROWSING_API_KEY = "AIzaSyATSZEXWFZcXoBEuFKMwBOuZambpWFf4kk"
-SERPAPI_KEY = "507c5bd1-eecc-4af4-b309-cf744f42e102"
+fontes_confiaveis = [
+    "bbc.com", "cnn.com", "nytimes.com", "reuters.com", "g1.globo.com",
+    "uol.com.br", "folha.uol.com.br", "estadao.com.br", "theguardian.com"
+]
 
-def verificar_seguranca_url_safebrowsing(url, api_key):
-    endpoint = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
-    payload = {
-        "client": {
-            "clientId": "verificador-links",
-            "clientVersion": "1.0"
-        },
-        "threatInfo": {
-            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "POTENTIALLY_HARMFUL_APPLICATION"],
-            "platformTypes": ["ANY_PLATFORM"],
-            "threatEntryTypes": ["URL"],
-            "threatEntries": [{"url": url}]
-        }
-    }
-
-    response = requests.post(f"{endpoint}?key={api_key}", json=payload)
-    data = response.json()
-
-    if "matches" in data:
-        return "❌ CUIDADO! Esta URL foi sinalizada como perigosa pelo Google Safe Browsing."
-    return "✅ Nenhuma ameaça detectada pelo Google Safe Browsing no momento.\n⚠️ Atenção: sites novos ou pouco conhecidos ainda podem representar riscos não identificados."
-
-def buscar_noticias_relacionadas(url):
-    query = url.split("/")[-1].replace("-", " ")[:100]
-    params = {
-        "engine": "google",
-        "q": query,
-        "tbm": "nws",
-        "api_key": SERPAPI_KEY
-    }
-    response = requests.get("https://serpapi.com/search", params=params)
-    noticias = response.json().get("news_results", [])
-    if not noticias:
-        return "Nenhuma notícia relacionada encontrada em fontes confiáveis."
-    return "\n".join([f"• [{n['title']}]({n['link']})" for n in noticias[:3]])
-
-def verificar_link(url):
+def verificar_link_noticia(url):
     try:
-        dominio = urlparse(url).netloc
-        info = whois.whois(dominio)
+        dominio = url.split("//")[-1].split("/")[0].replace("www.", "")
+        similares = difflib.get_close_matches(dominio, fontes_confiaveis, n=1, cutoff=0.6)
+        confiavel = dominio in fontes_confiaveis or bool(similares)
+        status = "✅ Fonte confiável." if confiavel else "⚠️ Fonte possivelmente não confiável."
 
-        suspeito = any(x in url.lower() for x in ["politica", "urgente", "milagre", "ganhe dinheiro", "exclusivo"])
-        reputacao = "Domínio criado em: " + str(info.creation_date)
-        alerta = "⚠️ Conteúdo pode conter termos sensacionalistas." if suspeito else "✅ Nenhum termo suspeito encontrado."
+        response = requests.get(url, timeout=10)
+        if response.status_code != 200:
+            return f"❌ Não foi possível acessar a página (código {response.status_code})."
 
-        noticias_relacionadas = buscar_noticias_relacionadas(url)
-        alerta_segurança = verificar_seguranca_url_safebrowsing(url, SAFE_BROWSING_API_KEY)
+        soup = BeautifulSoup(response.content, "html.parser")
+        titulo = soup.title.string.strip() if soup.title else "Sem título detectado"
 
-        return f"🔗 Link analisado: {url}\n\n{reputacao}\n{alerta}\n\n🗞️ Notícias confiáveis relacionadas:\n{noticias_relacionadas}\n\n🛡️ Segurança do site:\n{alerta_segurança}"
-
+        return f"{status}\n\n📰 **Título:** {titulo}"
     except Exception as e:
-        return f"❌ Erro ao verificar o link: {str(e)}"
+        return f"❌ Erro ao processar o link: {str(e)}"
