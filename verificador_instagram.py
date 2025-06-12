@@ -6,27 +6,30 @@ def verificar_perfil_instagram(username):
         username = "@" + username
     user = username[1:]
 
-    url = f"https://www.instagram.com/{user}/?__a=1&__d=dis"
+    url = "https://instagram-profile1.p.rapidapi.com/getprofile"
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "X-RapidAPI-Key": "2b54a3f18fmshfcada5b2e80c279p12072ejsncc9e1d2a188c",
+        "X-RapidAPI-Host": "instagram-profile1.p.rapidapi.com"
     }
+    params = { "username": user }
 
     try:
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, params=params, timeout=5)
         if response.status_code != 200:
             return f"❌ Não foi possível acessar o perfil @{user}. Código: {response.status_code}"
 
         data = response.json()
-        profile_data = data.get("graphql", {}).get("user", {})
+        profile = data.get("data", {})
 
-        if not profile_data:
+        if not profile:
             return f"❌ Perfil @{user} não encontrado."
 
-        verificado = "✅ Verificado" if profile_data.get("is_verified") else "❌ Não verificado"
-        seguidores = profile_data.get("edge_followed_by", {}).get("count", 0)
-        bio = profile_data.get("biography", "")
+        verificado = "✅ Verificado" if profile.get("isVerified") else "❌ Não verificado"
+        seguidores = profile.get("followerCount", 0)
+        nome = profile.get("fullName", "Desconhecido")
+        bio = profile.get("biography", "")
 
-        return f"Perfil: @{user}\n{verificado}\nSeguidores: {seguidores}\nBio: {bio or 'Sem bio'}"
+        return f"📱 {nome} (@{user})\n{verificado}\n👥 Seguidores: {seguidores}\n📝 Bio: {bio or 'Sem bio'}"
 
     except Exception as e:
         return f"❌ Erro ao consultar perfil @{user}: {str(e)}"
