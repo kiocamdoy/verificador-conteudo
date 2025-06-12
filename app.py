@@ -1,24 +1,23 @@
+
 import streamlit as st
-from verificador_instagram_integrado import verificar_perfil_completo
 from verificador_links import verificar_link
 
 st.set_page_config(page_title="Verificador de Conteúdo e Perfis", layout="centered")
 
 st.markdown("## 🔍 Verificador de Conteúdo e Perfis")
+tipo_verificacao = st.selectbox("O que você deseja verificar?", ["Link de notícia", "Perfil do Instagram"])
 
-opcao = st.selectbox("O que você deseja verificar?", ["Perfil do Instagram", "Link de notícia"])
+entrada = st.text_input("Insira o link da notícia:" if tipo_verificacao == "Link de notícia" else "Insira o @ do perfil:")
 
-entrada = ""
-if opcao == "Perfil do Instagram":
-    entrada = st.text_input("Insira o @ do perfil:", placeholder="@exemplo")
-    if st.button("Verificar Perfil") and entrada:
-        resultado = verificar_perfil_completo(entrada)
-        st.markdown("### Resultado:")
-        st.write(resultado)
-
-elif opcao == "Link de notícia":
-    entrada = st.text_input("Insira o link da notícia:", placeholder="https://exemplo.com/noticia")
-    if st.button("Verificar Link") and entrada:
+if st.button("Verificar Link" if tipo_verificacao == "Link de notícia" else "Verificar Perfil"):
+    if tipo_verificacao == "Link de notícia":
         resultado = verificar_link(entrada)
         st.markdown("### Resultado:")
-        st.markdown(resultado, unsafe_allow_html=True)
+        if resultado:
+            st.markdown(f"🔗 **Link formatado:** [{resultado['link_formatado']}]({resultado['link_formatado']})")
+            st.markdown(f"📶 **Status do site:** {resultado['status_code']}")
+            st.markdown(f"🟢 **Acessível:** {'Sim' if resultado['acessivel'] else 'Não'}")
+        else:
+            st.error("❌ Link inválido ou inacessível.")
+    else:
+        st.warning("Verificação de perfil ainda não implementada nesta versão.")
