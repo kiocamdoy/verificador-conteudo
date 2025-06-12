@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import whois
 
 SAFE_BROWSING_API_KEY = "AIzaSyATSZEXWFZcXoBEuFKMwBOuZambpWFf4kk"
+SERPAPI_KEY = "507c5bd1-eecc-4af4-b309-cf744f42e102"
 
 def verificar_seguranca_url_safebrowsing(url, api_key):
     endpoint = "https://safebrowsing.googleapis.com/v4/threatMatches:find"
@@ -27,6 +28,20 @@ def verificar_seguranca_url_safebrowsing(url, api_key):
         return "❌ CUIDADO! Esta URL foi sinalizada como perigosa pelo Google Safe Browsing."
     return "✅ Nenhuma ameaça detectada pelo Google Safe Browsing no momento.\n⚠️ Atenção: sites novos ou pouco conhecidos ainda podem representar riscos não identificados."
 
+def buscar_noticias_relacionadas(url):
+    query = url.split("/")[-1].replace("-", " ")[:100]
+    params = {
+        "engine": "google",
+        "q": query,
+        "tbm": "nws",
+        "api_key": SERPAPI_KEY
+    }
+    response = requests.get("https://serpapi.com/search", params=params)
+    noticias = response.json().get("news_results", [])
+    if not noticias:
+        return "Nenhuma notícia relacionada encontrada em fontes confiáveis."
+    return "\n".join([f"• [{n['title']}]({n['link']})" for n in noticias[:3]])
+
 def verificar_link(url):
     try:
         dominio = urlparse(url).netloc
@@ -36,15 +51,10 @@ def verificar_link(url):
         reputacao = "Domínio criado em: " + str(info.creation_date)
         alerta = "⚠️ Conteúdo pode conter termos sensacionalistas." if suspeito else "✅ Nenhum termo suspeito encontrado."
 
-        sugestoes = [
-            "https://www.snopes.com/fact-check/fake-news-alert/",
-            "https://aosfatos.org/noticias/boato-sobre-tema-semelhante/"
-        ]
-        links_similares = "\n".join(f"• {s}" for s in sugestoes)
-
+        noticias_relacionadas = buscar_noticias_relacionadas(url)
         alerta_segurança = verificar_seguranca_url_safebrowsing(url, SAFE_BROWSING_API_KEY)
 
-        return f"🔗 Link analisado: {url}\n\n{reputacao}\n{alerta}\n\n🔗 Notícias similares confiáveis:\n{links_similares}\n\n🛡️ Segurança do site:\n{alerta_segurança}"
+        return f"🔗 Link analisado: {url}\n\n{reputacao}\n{alerta}\n\n🗞️ Notícias confiáveis relacionadas:\n{noticias_relacionadas}\n\n🛡️ Segurança do site:\n{alerta_segurança}"
 
     except Exception as e:
         return f"❌ Erro ao verificar o link: {str(e)}"
