@@ -1,39 +1,32 @@
 
-import instaloader
-import os
-from dotenv import load_dotenv
-from difflib import get_close_matches
-
-# Carrega variáveis do .env
-load_dotenv("login.env")
-
-INSTAGRAM_USER = os.getenv("INSTAGRAM_USER")
-INSTAGRAM_PASS = os.getenv("INSTAGRAM_PASS")
+import requests
 
 def verificar_perfil_instagram(username):
     if not username.startswith("@"):
         username = "@" + username
+    user = username[1:]
 
-    username_clean = username[1:]
-    loader = instaloader.Instaloader()
+    url = f"https://www.instagram.com/{user}/?__a=1&__d=dis"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
 
     try:
-        loader.login(INSTAGRAM_USER, INSTAGRAM_PASS)
-        profile = instaloader.Profile.from_username(loader.context, username_clean)
-        verificado = "✅ Perfil verificado" if profile.is_verified else "❌ Perfil não verificado"
-        seguidores = f"👥 Seguidores: {profile.followers}"
-        bio = f"📝 Bio: {profile.biography if profile.biography else 'Nenhuma bio encontrada'}"
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code != 200:
+            return f"❌ Não foi possível acessar o perfil @{user}. Código: {response.status_code}"
 
-        # Base simulada de nomes de perfis
-        base_nomes = [
-            "nebraskarenovation", "nebraska.renovation", "renovationnebraska", "nebraskareno", "nebraskaconstruction"
-        ]
+        data = response.json()
+        profile_data = data.get("graphql", {}).get("user", {})
 
-        semelhantes = get_close_matches(username_clean.lower(), base_nomes, n=3, cutoff=0.6)
-        similares_formatados = "\n".join(f"• @{s}" for s in semelhantes)
-        alerta_similar = f"🔍 Perfis com nomes parecidos encontrados:\n{similares_formatados}" if semelhantes else "✅ Nenhum perfil semelhante suspeito encontrado."
+        if not profile_data:
+            return f"❌ Perfil @{user} não encontrado."
 
-        return f"📱 Perfil analisado: @{profile.username}\n\n{verificado}\n{seguidores}\n{bio}\n\n{alerta_similar}"
+        verificado = "✅ Verificado" if profile_data.get("is_verified") else "❌ Não verificado"
+        seguidores = profile_data.get("edge_followed_by", {}).get("count", 0)
+        bio = profile_data.get("biography", "")
+
+        return f"Perfil: @{user}\n{verificado}\nSeguidores: {seguidores}\nBio: {bio or 'Sem bio'}"
 
     except Exception as e:
-        return f"❌ Não foi possível verificar o perfil {username}.\nErro: {str(e)}"
+        return f"❌ Erro ao consultar perfil @{user}: {str(e)}"
