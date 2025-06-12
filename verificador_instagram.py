@@ -1,6 +1,14 @@
 
 import instaloader
+import os
+from dotenv import load_dotenv
 from difflib import get_close_matches
+
+# Carrega variáveis do .env
+load_dotenv("login.env")
+
+INSTAGRAM_USER = os.getenv("INSTAGRAM_USER")
+INSTAGRAM_PASS = os.getenv("INSTAGRAM_PASS")
 
 def verificar_perfil_instagram(username):
     if not username.startswith("@"):
@@ -10,15 +18,15 @@ def verificar_perfil_instagram(username):
     loader = instaloader.Instaloader()
 
     try:
+        loader.login(INSTAGRAM_USER, INSTAGRAM_PASS)
         profile = instaloader.Profile.from_username(loader.context, username_clean)
         verificado = "✅ Perfil verificado" if profile.is_verified else "❌ Perfil não verificado"
         seguidores = f"👥 Seguidores: {profile.followers}"
         bio = f"📝 Bio: {profile.biography if profile.biography else 'Nenhuma bio encontrada'}"
 
-        # Simulação de base local de nomes de perfis comuns
+        # Base simulada de nomes de perfis
         base_nomes = [
-            "alinefonseca", "aline_fonseca", "aline.fon", "alinefonceca", "alinnefonseca",
-            "alinf", "fonsecaa", "a_linf", "alinef", "aline_f"
+            "nebraskarenovation", "nebraska.renovation", "renovationnebraska", "nebraskareno", "nebraskaconstruction"
         ]
 
         semelhantes = get_close_matches(username_clean.lower(), base_nomes, n=3, cutoff=0.6)
