@@ -1,23 +1,28 @@
 
 import streamlit as st
 from verificador_links import verificar_link
+from verificador_instagram import verificar_perfil_instagram
 
-st.set_page_config(page_title="Verificador de Conteúdo e Perfis", layout="centered")
+st.title("🔍 Verificador de Conteúdo e Perfis")
 
-st.markdown("## 🔍 Verificador de Conteúdo e Perfis")
-tipo_verificacao = st.selectbox("O que você deseja verificar?", ["Link de notícia", "Perfil do Instagram"])
+opcao = st.selectbox("O que você deseja verificar?", ["Link de notícia", "Perfil do Instagram"])
 
-entrada = st.text_input("Insira o link da notícia:" if tipo_verificacao == "Link de notícia" else "Insira o @ do perfil:")
-
-if st.button("Verificar Link" if tipo_verificacao == "Link de notícia" else "Verificar Perfil"):
-    if tipo_verificacao == "Link de notícia":
-        resultado = verificar_link(entrada)
-        st.markdown("### Resultado:")
-        if resultado:
-            st.markdown(f"🔗 **Link formatado:** [{resultado['link_formatado']}]({resultado['link_formatado']})")
-            st.markdown(f"📶 **Status do site:** {resultado['status_code']}")
-            st.markdown(f"🟢 **Acessível:** {'Sim' if resultado['acessivel'] else 'Não'}")
+if opcao == "Link de notícia":
+    url = st.text_input("Insira o link da notícia:")
+    if st.button("Verificar Link"):
+        if url:
+            resultado = verificar_link(url)
+            st.write("### Resultado:")
+            st.markdown(resultado)
         else:
-            st.error("❌ Link inválido ou inacessível.")
-    else:
-        st.warning("Verificação de perfil ainda não implementada nesta versão.")
+            st.warning("Por favor, insira um link válido.")
+
+elif opcao == "Perfil do Instagram":
+    perfil = st.text_input("Insira o @ do perfil:")
+    if st.button("Verificar Perfil"):
+        if perfil:
+            resultado = verificar_perfil_instagram(perfil)
+            st.write("### Resultado:")
+            st.markdown(resultado)
+        else:
+            st.warning("Por favor, insira um perfil válido.")

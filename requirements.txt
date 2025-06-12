@@ -1,3 +1,6 @@
+
 streamlit
-beautifulsoup4
 requests
+python-whois
+instaloader
+python-dotenv
